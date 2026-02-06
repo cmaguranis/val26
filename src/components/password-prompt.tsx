@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { LoadingBar } from '@/components/loading-bar';
 import { content } from '@/config/content';
 import { landingConfig } from '@/config/landing-config';
 import dogImage from '@/assets/dog.png';
@@ -16,35 +17,72 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
   const [showCallout, setShowCallout] = useState(false);
   const [hintAccepted, setHintAccepted] = useState(false);
   const [processedDogImage, setProcessedDogImage] = useState<string | null>(null);
-  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [shouldAnimateDog, setShouldAnimateDog] = useState(false);
+  const [woofs, setWoofs] = useState<Array<{ id: number; x: number; y: number }>>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const calloutRef = useRef<HTMLDivElement>(null);
+  const dogContainerRef = useRef<HTMLDivElement>(null);
+  const woofIdCounter = useRef(0);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Loading bar progress - increment to fill one block at a time every 0.5 seconds
+  // Hide dog button when attempts reset to 0
   useEffect(() => {
+    if (attempts === 0) {
+      setShowDog(false);
+      setShowCallout(false);
+      setHintAccepted(false);
+      setShouldAnimateDog(false);
+    }
+  }, [attempts]);
+
+  // Animate dog button after 4th attempt, then every 3 attempts (7, 10, 13, etc.)
+  useEffect(() => {
+    if (attempts >= 4 && (attempts - 4) % 3 === 0) {
+      setShouldAnimateDog(true);
+      // Reset animation after it completes
+      const timer = setTimeout(() => {
+        setShouldAnimateDog(false);
+      }, 1000); // Animation duration
+      return () => clearTimeout(timer);
+    } else {
+      setShouldAnimateDog(false);
+    }
+  }, [attempts]);
+
+  // Generate "woof" text around dog button
+  useEffect(() => {
+    if (!showDog) {
+      setWoofs([]);
+      return;
+    }
+
     const interval = setInterval(() => {
-      setLoadingProgress((prev) => {
-        // Total blocks = 40 * 30 = 1200
-        // Increment by 1/1200 (0.0833%) to fill exactly one block at a time
-        const increment = 100 / 1200; // 100% / 1200 blocks = ~0.0833% per block
-        const newProgress = prev + increment;
-        
-        if (newProgress >= 100) {
-          return increment; // Reset to one block filled
-        }
-        return newProgress;
-      });
-    }, 500); // Every 0.5 seconds
+      // Generate random position around the dog button (within a radius)
+      // Only top-left quadrant (above and to the left) - angles from π to 3π/2
+      const angle = Math.PI + Math.random() * (Math.PI / 2);
+      const distance = 60 + Math.random() * 80; // 60-140px from center
+      const x = Math.cos(angle) * distance; // Negative (left)
+      const y = Math.sin(angle) * distance; // Negative (above)
+
+      const newWoof = {
+        id: woofIdCounter.current++,
+        x,
+        y,
+      };
+
+      setWoofs((prev) => [...prev, newWoof]);
+
+      // Remove woof after fade animation completes (1.5 seconds)
+      setTimeout(() => {
+        setWoofs((prev) => prev.filter((woof) => woof.id !== newWoof.id));
+      }, 1500);
+    }, 1350); // New woof interval
 
     return () => clearInterval(interval);
-  }, []);
-
-  // Number of blocks in the loading bar grid
-  const totalBlocks = 40;
+  }, [showDog]);
 
   // Process image to make white background transparent (only edge-connected white pixels)
   useEffect(() => {
@@ -138,9 +176,9 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
       }
 
       // Make all edge-connected white pixels transparent
-      toMakeTransparent.forEach(pixelIdx => {
+      for (const pixelIdx of toMakeTransparent) {
         data[pixelIdx + 3] = 0; // Set alpha to 0 (transparent)
-      });
+      }
 
       ctx.putImageData(imageData, 0, 0);
       setProcessedDogImage(canvas.toDataURL('image/png'));
@@ -152,7 +190,16 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
   const getErrorMessage = () => {
     if (attempts === 1) return content.password.errorMessage1;
     if (attempts === 2) return content.password.errorMessage2;
-    if (attempts >= 3) return content.password.errorMessage3;
+    if (attempts === 3) return content.password.errorMessage3;
+    if (attempts === 4) return content.password.errorMessage4;
+    if (attempts === 5) return content.password.errorMessage5;
+    if (attempts === 6) return content.password.errorMessage6;
+    if (attempts === 7) return content.password.errorMessage7;
+    if (attempts === 8) return content.password.errorMessage8;
+    if (attempts === 9) return content.password.errorMessage9;
+    if (attempts === 10) return content.password.errorMessage10;
+    if (attempts === 11) return content.password.errorMessage11;
+    if (attempts >= 12) return content.password.errorMessage12;
     return '';
   };
 
@@ -161,13 +208,26 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
     
     if (password === landingConfig.password) {
       setAttempts(0);
+      setShowDog(false);
+      setShowCallout(false);
+      setHintAccepted(false);
       onSuccess();
     } else {
       const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
       
-      if (newAttempts === 3) {
-        setShowDog(true);
+      // Reset counter after the final prompt (attempt 12+)
+      if (attempts >= 12) {
+        setAttempts(0);
+        setShowDog(false);
+        setShowCallout(false);
+        setHintAccepted(false);
+        setShouldAnimateDog(false);
+      } else {
+        setAttempts(newAttempts);
+        
+        if (newAttempts === 3) {
+          setShowDog(true);
+        }
       }
       
       setPassword('');
@@ -214,30 +274,33 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4 relative overflow-hidden">
       {/* Full-page grid loading bar (behind everything) */}
-      <div className="fixed inset-0 flex flex-row flex-wrap gap-1 p-1 pointer-events-none">
-        {Array.from({ length: totalBlocks * 30 }).map((_, index) => (
-          <div
-            key={index}
-            className={`transition-all duration-300 aspect-square ${
-              index < Math.floor((loadingProgress / 100) * totalBlocks * 30)
-                ? 'bg-rose-600 dark:bg-rose-700'
-                : 'bg-black'
-            }`}
-            style={{
-              transitionDelay: `${(index % totalBlocks) * 5}ms`,
-              width: 'calc((100% - 41px) / 40)', // 40 blocks, 41 gaps (1px each)
-            }}
-          />
-        ))}
-      </div>
+      <LoadingBar />
 
       {/* Animated dog on third attempt */}
       {showDog && processedDogImage && (
-        <div className="fixed bottom-4 right-4 z-50 animate-bounce-in dog-container">
+        <div 
+          ref={dogContainerRef}
+          className={`fixed bottom-4 right-4 z-50 animate-bounce-in dog-container ${shouldAnimateDog ? 'dog-rock-animation' : ''}`}
+        >
+          {/* Woof text animations */}
+          {woofs.map((woof) => (
+            <div
+              key={woof.id}
+              className="absolute woof-text"
+              style={{
+                left: `calc(50% + ${woof.x}px)`,
+                top: `calc(50% + ${woof.y}px)`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
+              woof
+            </div>
+          ))}
+          
           <button
             type="button"
             onClick={handleDogClick}
-            className="cursor-pointer hover:scale-105 transition-transform"
+            className="cursor-pointer hover:scale-105 transition-transform relative z-10"
             aria-label="Dog hint"
           >
             <img
@@ -380,6 +443,48 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
         .dog-image {
           image-rendering: crisp-edges;
           image-rendering: pixelated;
+        }
+
+        @keyframes rock-back-forth {
+          0%, 100% {
+            transform: rotate(0deg);
+          }
+          25% {
+            transform: rotate(-15deg);
+          }
+          75% {
+            transform: rotate(15deg);
+          }
+        }
+
+        .dog-rock-animation {
+          animation: rock-back-forth 0.5s ease-in-out 2;
+        }
+
+        .woof-text {
+          font-family: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+          font-size: 1.25rem;
+          font-weight: bold;
+          color: #fda4af;
+          pointer-events: none;
+          user-select: none;
+          white-space: nowrap;
+          animation: woof-fade 1.5s ease-out forwards;
+        }
+
+        .dark .woof-text {
+          color: #fda4af;
+        }
+
+        @keyframes woof-fade {
+          0% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+          }
         }
       `}</style>
     </div>

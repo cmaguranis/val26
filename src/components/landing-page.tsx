@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { LoadingBar } from '@/components/loading-bar';
 import { landingConfig } from '@/config/landing-config';
 import { content } from '@/config/content';
 import { LoveCounter } from '@/components/love-counter';
@@ -19,7 +20,6 @@ export function LandingPage() {
   const [isButtonEvading, setIsButtonEvading] = useState(false);
   const clockRef = useRef<HTMLDivElement>(null);
   const flipClockInstance = useRef<any>(null);
-  const [loadingProgress, setLoadingProgress] = useState(0);
 
   // Track if URL params are being used to override state
   const urlOverrideRef = useRef(false);
@@ -88,24 +88,6 @@ export function LandingPage() {
     };
   }, [targetDate, isDateReached]);
 
-  // Loading bar progress - increment to fill one block at a time every 0.5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLoadingProgress((prev) => {
-        // Total blocks = 40 * 30 = 1200
-        // Increment by 1/1200 (0.0833%) to fill exactly one block at a time
-        const increment = 100 / 1200; // 100% / 1200 blocks = ~0.0833% per block
-        const newProgress = prev + increment;
-        
-        if (newProgress >= 100) {
-          return increment; // Reset to one block filled
-        }
-        return newProgress;
-      });
-    }, 500); // Every 0.5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
 
   // Separate useEffect for FlipClock initialization
   useEffect(() => {
@@ -248,9 +230,6 @@ export function LandingPage() {
   const timeUntilTarget = targetDate.getTime() - currentTime.getTime();
   const daysRemaining = Math.ceil(timeUntilTarget / (1000 * 60 * 60 * 24));
 
-  // Number of blocks in the loading bar grid
-  const totalBlocks = 40;
-
   // Show password prompt view
   if (showPasswordPrompt) {
     return <PasswordPrompt onSuccess={handlePasswordSuccess} />;
@@ -267,22 +246,7 @@ export function LandingPage() {
       onMouseMove={handleMouseMove}
     >
       {/* Full-page grid loading bar (behind everything) */}
-      <div className="fixed inset-0 flex flex-row flex-wrap gap-1 p-1 pointer-events-none">
-        {Array.from({ length: totalBlocks * 30 }).map((_, index) => (
-          <div
-            key={index}
-            className={`transition-all duration-300 aspect-square ${
-              index < Math.floor((loadingProgress / 100) * totalBlocks * 30)
-                ? 'bg-rose-600 dark:bg-rose-700'
-                : 'bg-black'
-            }`}
-            style={{
-              transitionDelay: `${(index % totalBlocks) * 5}ms`,
-              width: 'calc((100% - 41px) / 40)', // 40 blocks, 41 gaps (1px each)
-            }}
-          />
-        ))}
-      </div>
+      <LoadingBar />
 
       {/* Dev Tools Overlay */}
       {showDevTools && (
