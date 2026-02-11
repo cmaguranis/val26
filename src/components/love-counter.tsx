@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { content } from '@/config/content';
 
+import { useGameIndex } from '@/hooks/use-game-index';
+
 export function LoveCounter() {
+  const { indexPath } = useGameIndex();
   const [amount, setAmount] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -126,6 +130,13 @@ export function LoveCounter() {
             <p className="text-lg text-rose-600 dark:text-rose-400 max-w-2xl mx-auto">
               {content.heart.message}
             </p>
+
+            <div className="pt-8 flex justify-center">
+              <Button asChild variant="outline" className="w-full max-w-xs border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800">
+                <Link to={indexPath}>Enter the Arcade</Link>
+              </Button>
+            </div>
+
             <Button
               onClick={handleBack}
               size="lg"

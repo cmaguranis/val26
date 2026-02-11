@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -5,21 +6,34 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingBar } from '@/components/loading-bar';
 import { landingConfig } from '@/config/landing-config';
 import { content } from '@/config/content';
-import { LoveCounter } from '@/components/love-counter';
-import { PasswordPrompt } from '@/components/password-prompt';
 
 export function LandingPage() {
-  const targetDate = useMemo(() => new Date(landingConfig.targetDate), []);
+  const targetDate = useMemo(() => {
+    // Manually parse to ensure it uses the user's local timezone explicitly
+    try {
+      const [datePart, timePart] = landingConfig.targetDate.split('T');
+      if (!datePart || !timePart) return new Date(landingConfig.targetDate);
+      
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hour, minute, second] = timePart.split(':').map(Number);
+      
+      // Date constructor with multiple arguments uses local time
+      // Month is 0-indexed (0 = January)
+      return new Date(year, month - 1, day, hour, minute, second);
+    } catch (e) {
+      console.error("Error parsing date, falling back to string parse", e);
+      return new Date(landingConfig.targetDate);
+    }
+  }, []);
   const [isDateReached, setIsDateReached] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showDevTools, setShowDevTools] = useState(false);
-  const [showCounter, setShowCounter] = useState(false);
-  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isButtonEvading, setIsButtonEvading] = useState(false);
   const clockRef = useRef<HTMLDivElement>(null);
   const flipClockInstance = useRef<any>(null);
+  const navigate = useNavigate();
 
   // Track if URL params are being used to override state
   const urlOverrideRef = useRef(false);
@@ -31,14 +45,9 @@ export function LandingPage() {
 
     if (view === 'countdown' || params.has('landing-countdown')) {
       setIsDateReached(false);
-      setShowCounter(false);
       urlOverrideRef.current = true;
     } else if (view === 'ready' || params.has('landing-ready')) {
       setIsDateReached(true);
-      setShowCounter(false);
-      urlOverrideRef.current = true;
-    } else if (view === 'counter' || params.has('counter')) {
-      setShowCounter(true);
       urlOverrideRef.current = true;
     }
   }, []);
@@ -219,26 +228,11 @@ export function LandingPage() {
   };
 
   const handleCTAClick = () => {
-    setShowPasswordPrompt(true);
-  };
-
-  const handlePasswordSuccess = () => {
-    setShowPasswordPrompt(false);
-    setShowCounter(true);
+    navigate('/games');
   };
 
   const timeUntilTarget = targetDate.getTime() - currentTime.getTime();
   const daysRemaining = Math.ceil(timeUntilTarget / (1000 * 60 * 60 * 24));
-
-  // Show password prompt view
-  if (showPasswordPrompt) {
-    return <PasswordPrompt onSuccess={handlePasswordSuccess} />;
-  }
-
-  // Show counter view
-  if (showCounter) {
-    return <LoveCounter />;
-  }
 
   return (
     <div 
