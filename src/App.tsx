@@ -26,7 +26,7 @@ function PasswordPromptPage() {
 
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/val26">
       <Routes>
         <Route path="/" element={<LandingPage />} />
         

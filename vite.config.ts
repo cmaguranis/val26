@@ -14,7 +14,7 @@ export default defineConfig({
   // Set base to your repository name for GitHub Pages
   // Example: if repo is 'username/my-repo', set base to '/my-repo/'
   // For custom domain or username.github.io, set base to '/'
-  base: './', // Relative paths work for most GitHub Pages setups
+  base: '/val26/', // Must match GitHub repository name
   build: {
     rollupOptions: {
       output: {

@@ -31,9 +31,14 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
   // Hide dog button when attempts reset to 0
   useEffect(() => {
     if (attempts === 0) {
+      // These state updates are intentional - resetting UI state based on attempts prop
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowDog(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowCallout(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHintAccepted(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShouldAnimateDog(false);
     }
   }, [attempts]);
@@ -41,6 +46,7 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
   // Animate dog button after 4th attempt, then every 3 attempts (7, 10, 13, etc.)
   useEffect(() => {
     if (attempts >= 4 && (attempts - 4) % 3 === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShouldAnimateDog(true);
       // Reset animation after it completes
       const timer = setTimeout(() => {
@@ -55,6 +61,7 @@ export function PasswordPrompt({ onSuccess }: PasswordPromptProps) {
   // Generate "woof" text around dog button
   useEffect(() => {
     if (!showDog) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWoofs([]);
       return;
     }

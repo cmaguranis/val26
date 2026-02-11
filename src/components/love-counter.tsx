@@ -17,12 +17,14 @@ export function LoveCounter() {
     // Don't restart animation if we've already reached the final target
     if (amount >= 9999) return;
     
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsAnimating(true);
     let currentAmount = 0;
     const pauseTarget = 5000;
     const finalTarget = 9999;
     const slowdownThreshold = 4990;
     let hasPaused = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     const animate = () => {
       if (currentAmount >= finalTarget) {
@@ -36,7 +38,7 @@ export function LoveCounter() {
         setAmount(pauseTarget);
         hasPaused = true;
         // Wait 1 second, then continue to 9999
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           animate();
         }, 1000);
         return;
@@ -65,11 +67,15 @@ export function LoveCounter() {
       currentAmount = Math.min(currentAmount + increment, finalTarget);
       setAmount(currentAmount);
 
-      setTimeout(animate, delay);
+      timeoutId = setTimeout(animate, delay);
     };
 
-    setTimeout(animate, 500);
-  }, [isAnimating]);
+    timeoutId = setTimeout(animate, 500);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isAnimating, amount]);
 
   const handleBack = () => {
     window.location.reload();

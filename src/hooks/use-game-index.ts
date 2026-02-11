@@ -13,6 +13,7 @@ export function useGameState(gameId: string) {
   useEffect(() => {
     const saved = localStorage.getItem(`game_won_${gameId}`);
     if (saved === 'true') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsWon(true);
     }
   }, [gameId]);

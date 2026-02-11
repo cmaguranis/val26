@@ -256,14 +256,17 @@ export default function InvisibleHeart() {
   
   // Initialize random rotation and stretch on mount
   useEffect(() => {
+    // Intentional initialization on mount - setting random values once
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRotation(Math.random() * Math.PI * 2);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStretch({
         x: 0.8 + Math.random() * 0.4, 
         y: 0.8 + Math.random() * 0.4
     });
   }, []);
 
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
     setRotation(Math.random() * Math.PI * 2);
     setStretch({
         x: 0.8 + Math.random() * 0.4, 
@@ -275,8 +278,7 @@ export default function InvisibleHeart() {
     setScoreData(null);
     setHasWonCurrent(false);
     setIsRevealed(false);
-    requestAnimationFrame(draw);
-  };
+  }, []);
 
   // Change shape handler
   const handleShapeChange = (value: string) => {
@@ -415,7 +417,7 @@ export default function InvisibleHeart() {
   // Re-draw triggers
   useEffect(() => {
     requestAnimationFrame(draw);
-  }, [draw]); 
+  }, [draw, rotation, stretch]); 
 
   // Input Handlers
   const getPoint = (e: React.MouseEvent | React.TouchEvent) => {

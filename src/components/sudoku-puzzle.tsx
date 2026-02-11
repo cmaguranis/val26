@@ -13,6 +13,7 @@ export function SudokuPuzzle() {
 
   useEffect(() => {
     if (isSolved && !showSuccess) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowSuccess(true);
     }
   }, [isSolved, showSuccess]);

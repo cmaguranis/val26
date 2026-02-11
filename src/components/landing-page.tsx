@@ -32,7 +32,7 @@ export function LandingPage() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [isButtonEvading, setIsButtonEvading] = useState(false);
   const clockRef = useRef<HTMLDivElement>(null);
-  const flipClockInstance = useRef<any>(null);
+  const flipClockInstance = useRef<(() => void) | null>(null);
   const navigate = useNavigate();
 
   // Track if URL params are being used to override state
@@ -121,26 +121,27 @@ export function LandingPage() {
         }
         
         // Try to get the exports - flipclock v1.0.1 might export differently
-        const flipClock = module.flipClock || (module as any).default?.flipClock || (module as any).default;
-        const elapsedTime = module.elapsedTime || (module as any).elapsedTime;
-        const theme = module.theme || (module as any).theme;
-        const css = module.css || (module as any).css;
+        const flipClockModule = module as Record<string, unknown>;
+        const flipClock = flipClockModule.flipClock || (flipClockModule.default as Record<string, unknown>)?.flipClock || flipClockModule.default;
+        const elapsedTime = flipClockModule.elapsedTime || (flipClockModule as Record<string, unknown>).elapsedTime;
+        const theme = flipClockModule.theme || (flipClockModule as Record<string, unknown>).theme;
+        const css = flipClockModule.css || (flipClockModule as Record<string, unknown>).css;
 
         if (!flipClock || !elapsedTime) {
           return;
         }
 
         try {
-          const instance = flipClock({
+          const instance = (flipClock as (config: unknown) => [unknown, () => void])({
             parent: clockRef.current as Element,
-            face: elapsedTime({
+            face: (elapsedTime as (config: unknown) => unknown)({
               to: targetDate,
               format: '[DD]:[hh]:[mm]:[ss]'
             }),
-            theme: theme({
+            theme: (theme as (config: unknown) => unknown)({
               dividers: ':',
               labels: [['DAYS'], ['HOURS'], ['MINUTES'], ['SECONDS']],
-              css: css({
+              css: (css as (config: unknown) => unknown)({
                 fontSize: '2rem',
                 borderRadius: '8px',
               })
@@ -148,14 +149,17 @@ export function LandingPage() {
           });
 
           // Hook into the face's onStop event
-          if (instance && instance.face && instance.face.onStop) {
-            instance.face.onStop = () => {
-              setIsDateReached(true);
-            };
+          if (instance && Array.isArray(instance) && instance[0]) {
+            const faceObj = instance[0] as { onStop?: () => void };
+            if (faceObj.onStop) {
+              faceObj.onStop = () => {
+                setIsDateReached(true);
+              };
+            }
           }
 
-          flipClockInstance.current = instance;
-        } catch (error) {
+          flipClockInstance.current = instance[1]; // Store cleanup function
+        } catch {
           // Silently fail if flipclock initialization fails
         }
       }).catch(() => {
@@ -167,20 +171,15 @@ export function LandingPage() {
 
     return () => {
       // Clean up FlipClock instance
+      const currentClockEl = clockRef.current;
       if (flipClockInstance.current) {
-        // Try different cleanup methods depending on what flipClock returns
-        if (typeof flipClockInstance.current === 'function') {
-          flipClockInstance.current();
-        } else if (Array.isArray(flipClockInstance.current) && flipClockInstance.current[1]) {
-          flipClockInstance.current[1](); // Call dispose function
-        } else if (flipClockInstance.current.dispose) {
-          flipClockInstance.current.dispose();
-        }
+        // Call the cleanup function
+        flipClockInstance.current();
         flipClockInstance.current = null;
       }
       // Clear the DOM element
-      if (clockRef.current) {
-        clockRef.current.innerHTML = '';
+      if (currentClockEl) {
+        currentClockEl.innerHTML = '';
       }
     };
   }, [isDateReached, targetDate]); // Include dependencies
