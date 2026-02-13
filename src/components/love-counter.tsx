@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { content } from '@/config/content';
@@ -7,18 +7,12 @@ import { content } from '@/config/content';
 import { useGameIndex } from '@/hooks/use-game-index';
 
 export function LoveCounter() {
+  const navigate = useNavigate();
   const { indexPath } = useGameIndex();
   const [amount, setAmount] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [_, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    if (isAnimating) return;
-    
-    // Don't restart animation if we've already reached the final target
-    if (amount >= 9999) return;
-    
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsAnimating(true);
     let currentAmount = 0;
     const pauseTarget = 5000;
     const finalTarget = 9999;
@@ -70,15 +64,16 @@ export function LoveCounter() {
       timeoutId = setTimeout(animate, delay);
     };
 
+    setIsAnimating(true);
     timeoutId = setTimeout(animate, 500);
     
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [isAnimating, amount]);
+  }, []);
 
   const handleBack = () => {
-    window.location.reload();
+    navigate('/');
   };
 
   let formattedAmount = amount <= 9999 
@@ -95,7 +90,7 @@ export function LoveCounter() {
       <div className="w-full max-w-4xl text-center space-y-12">
         {/* Title */}
         <div className="flex justify-center">
-          <Badge variant="outline" className="!h-auto text-2xl md:text-4xl px-8 py-4 md:px-10 md:py-5 font-bold border-rose-600 dark:border-rose-400 text-rose-600 dark:text-rose-400">
+          <Badge variant="ghost" className="!h-auto text-2xl md:text-4xl px-8 py-4 md:px-10 md:py-5 font-bold text-rose-600 dark:text-rose-400">
             {content.counter.title}
           </Badge>
         </div>
@@ -139,7 +134,7 @@ export function LoveCounter() {
 
             <div className="pt-8 flex justify-center">
               <Button asChild variant="outline" className="w-full max-w-xs border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800">
-                <Link to={indexPath}>Enter the Arcade</Link>
+                <Link to={indexPath}>Revisit the Arcade</Link>
               </Button>
             </div>
 

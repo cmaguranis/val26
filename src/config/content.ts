@@ -23,7 +23,7 @@ export const content = {
   heart: {
     subtitle: 'Can\'t put a number on it.',
     message: 'Happy Valentine\'s Day',
-    backButton: 'Back',
+    backButton: 'Restart',
   },
 
   // Password prompt
